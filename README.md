@@ -11,7 +11,7 @@ This tool allows you to set the Unity C# Script Template easily for multiple Uni
     C:/Unity/2017.1.5f1/Edtior/
     
   ## Executable
-  Please note that there must be a file named `default_cs.txt` in the directory the executable is in. This file must contain the contents of the new C# scripting template. If it does not exist already, it will automatically create one based on the example found within main.cpp.
+  There must be a file named `default_cs.txt` in the directory the executable is in. This file must contain the contents of the new C# script template. If it does not exist already, it will automatically create one based on the example found within main.cpp.
     
   You can drag and drop the .ini file onto the exectuable, or use the command prompt to run it like this:
   
