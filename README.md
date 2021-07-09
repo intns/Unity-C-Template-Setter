@@ -1,9 +1,7 @@
 # Unity C# Template Setter
 This tool allows you to set the Unity C# Script Template easily for multiple Unity installations.
 
-# Usage
-  ## INI Files
-  
+  # INI Files  
   INI Files are used in this program to specify the Editor folder in the Unity Installation folder.
   
   ## Example INI File
