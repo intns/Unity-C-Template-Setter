@@ -7,17 +7,8 @@
 #include <filesystem>
 namespace fs = std::filesystem;
 
-static void HandleExit()
-{
-	std::cout << "Press ENTER to exit...";
-	std::getchar();
-}
-
 namespace UT {
-	constexpr const char* utConfigExtension = ".ini";
-	constexpr std::size_t utConfigExtensionLength = std::char_traits<const char>::length(utConfigExtension);
-
-	constexpr const char utDefaultCSContents[] =
+	constexpr const char gDefaultCSContents[] =
 		"using System.Collections;\n\
 using System.Collections.Generic;\n\
 using UnityEngine;\n\
@@ -36,64 +27,17 @@ public class #SCRIPTNAME# : MonoBehaviour\n\
 \t}\n\
 }\n\
 #ROOTNAMESPACEEND#\n";
-
-	static inline const std::string GetTime() {
-		std::time_t t = std::time(nullptr);
-		std::tm tm = *std::localtime(&t);
-		std::ostringstream oss;
-
-		oss << std::put_time(&tm, "%d-%m-%Y_%H-%M-%S");
-
-		return oss.str();
-	}
-
-	static bool ParseConfig(const std::string& configName, bool backup) {
-		std::ifstream cfgFile(configName, std::ifstream::in);
-		if (!cfgFile.is_open()) {
-			std::cout << "Couldn't open provided config file\n";
-			return false;
-		}
-
-		if (!fs::exists("./default_cs.txt")) {
-			std::cout << "Creating default_cs.txt because it doesn't exist... ";
-
-			std::ofstream defaultFile("./default_cs.txt", std::ofstream::out);
-			defaultFile.write(utDefaultCSContents, sizeof(utDefaultCSContents) - 1);
-			defaultFile.close();
-
-			std::cout << "Done\n";
-		}
-
-		std::string currentLine;
-		while (std::getline(cfgFile, currentLine)) {
-			if (currentLine.empty()) {
-				continue;
-			}
-
-			// currentLine should have a path to the "Unity\*VERSION*\Editor" folder
-			// We'll assume the new script template is called "default.cs"
-
-			const std::string finalPath = currentLine + "\\Data\\Resources\\ScriptTemplates\\81-C# Script-NewBehaviourScript.cs.txt";
-
-			if (backup && !fs::copy_file(finalPath, finalPath + ".backup" + GetTime()))
-			{
-				std::cout << "Unable to backup file\n";
-				return false;
-			}
-
-			std::cout << "Destination for .cs.txt file: " << finalPath << '\n';
-			if (!fs::copy_file("default_cs.txt", finalPath, fs::copy_options::overwrite_existing)) {
-				std::cout << "Couldn't copy file\n";
-				return false;
-			}
-		}
-
-		return true;
-	}
 } // namespace UT
 
+
+static void handleExit()
+{
+	std::cout << "Press ENTER to exit...";
+	((void)std::getchar());
+}
+
 int main(int argc, char** argv) {
-	std::atexit(HandleExit);
+	std::atexit(handleExit);
 
 	if (argc == 1)
 	{
@@ -118,19 +62,61 @@ int main(int argc, char** argv) {
 
 		// Basic check to see if the string can even contain the specific config extension
 		const size_t argLength = arg.length();
-		if (argLength <= UT::utConfigExtensionLength) {
+		if (argLength <= 4) {
 			continue;
 		}
 
-		const std::string extension = arg.substr(argLength - UT::utConfigExtensionLength, UT::utConfigExtensionLength);
-		if (extension != UT::utConfigExtension) {
+		if (arg.substr(argLength - 4, 4) != "ini") {
 			continue;
 		}
 
 		std::cout << "Found a config file in arguments\n";
-		if (!UT::ParseConfig(arg, createBackup))
-		{
+		std::ifstream cfgFile(arg, std::ifstream::in);
+		if (!cfgFile.is_open()) {
+			std::cout << "Couldn't open provided config file\n";
 			return EXIT_FAILURE;
+		}
+
+		if (!fs::exists("./default_cs.txt")) {
+			std::cout << "Creating default_cs.txt because it doesn't exist... ";
+
+			std::ofstream defaultFile("./default_cs.txt", std::ofstream::out);
+			defaultFile.write(UT::gDefaultCSContents, sizeof(UT::gDefaultCSContents) - 1);
+			defaultFile.close();
+
+			std::cout << "Done\n";
+		}
+
+		std::string currentLine;
+		while (std::getline(cfgFile, currentLine)) {
+			if (currentLine.empty()) {
+				continue;
+			}
+
+			// currentLine should have a path to the "Unity\*VERSION*\Editor" folder
+			// We'll assume the new script template is called "default.cs"
+
+			const std::string finalPath = currentLine + "\\Data\\Resources\\ScriptTemplates\\81-C# Script-NewBehaviourScript.cs.txt";
+
+			if (createBackup) {
+				std::time_t t = std::time(nullptr);
+				std::tm tm = *std::localtime(&t);
+
+				std::ostringstream oss;
+				oss << std::put_time(&tm, "%d-%m-%Y_%H-%M-%S");
+
+				if (!fs::copy_file(finalPath, finalPath + ".backup" + oss.str()))
+				{
+					std::cout << "Unable to backup file\n";
+					return false;
+				}
+			}
+
+			std::cout << "Destination for .cs.txt file: " << finalPath << '\n';
+			if (!fs::copy_file("default_cs.txt", finalPath, fs::copy_options::overwrite_existing)) {
+				std::cout << "Couldn't copy file\n";
+				return EXIT_FAILURE;
+			}
 		}
 
 		return EXIT_SUCCESS;
